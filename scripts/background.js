@@ -114,7 +114,7 @@ async function handleSummarizeRequest(tabId, sendResponse) {
 
 async function callHuggingFaceAPI(text, token) {
   const modelUrl =
-    'https://api-inference.huggingface.co/models/facebook/bart-large-cnn';
+    'https://router.huggingface.co/hf-inference/models/facebook/bart-large-cnn';
 
   // BART-large-CNN handles ~1024 tokens which is roughly 3000-4000 chars.
   // Truncate to a safe limit.

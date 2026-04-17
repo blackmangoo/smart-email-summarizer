@@ -6,7 +6,7 @@
   "permissions": ["activeTab", "storage", "scripting"],
   "host_permissions": [
     "https://mail.google.com/*",
-    "https://api-inference.huggingface.co/*"
+    "https://router.huggingface.co/*"
   ],
   "action": {
     "default_popup": "popup/popup.html"
