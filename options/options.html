@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Email Summarizer Options</title>
+    <link rel="stylesheet" href="options.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <div class="card glass">
+        <h1>Settings</h1>
+        <p class="subtitle">
+          Configure your Hugging Face API connection to power the summaries.
+        </p>
+
+        <div class="input-group">
+          <label for="hf-token">Hugging Face Access Token</label>
+          <input
+            type="password"
+            id="hf-token"
+            placeholder="hf_xxxxxxxxxxxxxxxxxxx"
+            autocomplete="off"
+          />
+          <p class="help-text">
+            You can find or create your token at
+            <a href="https://huggingface.co/settings/tokens" target="_blank"
+              >huggingface.co/settings/tokens</a
+            >. Give it "Read" permissions.
+          </p>
+        </div>
+
+        <button id="save-btn" class="primary-btn">Save Settings</button>
+
+        <div id="status" class="status-message hidden">
+          Settings saved successfully!
+        </div>
+      </div>
+    </div>
+    <script src="options.js"></script>
+  </body>
+</html>

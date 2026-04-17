@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "Smart Email Summarizer",
+  "version": "1.0",
+  "description": "Uses AI to quickly summarize your long emails directly in Gmail.",
+  "permissions": ["activeTab", "storage", "scripting"],
+  "host_permissions": [
+    "https://mail.google.com/*",
+    "https://api-inference.huggingface.co/*"
+  ],
+  "action": {
+    "default_popup": "popup/popup.html"
+  },
+  "options_page": "options/options.html",
+  "background": {
+    "service_worker": "scripts/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://mail.google.com/*"],
+      "js": ["scripts/content.js"]
+    }
+  ]
+}
