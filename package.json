@@ -1,14 +1,22 @@
 {
-  "name": "email-summarizer-(chrome-extention)",
+  "name": "smart-email-summarizer",
   "version": "1.0.0",
-  "main": "index.js",
+  "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "keywords": [
+    "chrome-extension",
+    "email",
+    "summarizer",
+    "nlp",
+    "huggingface"
+  ],
+  "author": "Ammar",
+  "license": "MIT",
+  "description": "Chrome extension that summarizes emails using Hugging Face NLP models",
   "devDependencies": {
     "eslint": "^10.2.0",
     "eslint-config-prettier": "^10.1.8",

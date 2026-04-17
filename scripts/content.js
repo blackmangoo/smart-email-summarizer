@@ -1,41 +1,103 @@
-// This script runs in the context of the web page (Gmail).
+// Content script — runs inside the Gmail page context.
+// Listens for extraction requests from the background service worker.
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'EXTRACT_TEXT') {
-    const text = extractGmailContent();
-    sendResponse({ text: text });
+    try {
+      const text = extractGmailContent();
+      console.log(
+        '[Email Summarizer] Extracted text length:',
+        text.length,
+        '| Preview:',
+        text.substring(0, 120)
+      );
+      sendResponse({ text: text });
+    } catch (err) {
+      console.error('[Email Summarizer] Extraction error:', err);
+      sendResponse({ text: '', error: err.message });
+    }
   }
-  return true; // Keep the message channel open for async response
+  return true;
 });
 
 function extractGmailContent() {
-  // Gmail uses specific classes for the email body.
-  // .a3s.aiL is commonly used for the expanded email body.
-  const emailBodies = document.querySelectorAll('.a3s.aiL');
+  // Strategy 1: Look for the open/expanded email body.
+  // Gmail wraps each message body in a div with class "a3s" (sometimes also "aiL").
+  // We try multiple selectors from most-specific to least-specific.
 
-  if (emailBodies.length > 0) {
-    // There might be multiple in a thread, usually the last one is the one we want.
-    // Let's grab the last visible one or combine them if needed.
-    // Here we'll grab the last one in the DOM, which is usually the most recent reply.
-    const lastEmail = emailBodies[emailBodies.length - 1];
-    let rawText = lastEmail.innerText || lastEmail.textContent;
-    return cleanText(rawText);
+  const selectors = [
+    '.a3s.aiL', // expanded email body (most common)
+    '.a3s', // email body without aiL flag
+    'div.ii.gt', // another common Gmail message body wrapper
+    'div[data-message-id] .a3s', // message-specific body
+  ];
+
+  for (const selector of selectors) {
+    const elements = document.querySelectorAll(selector);
+    if (elements.length > 0) {
+      // Combine ALL visible email bodies in the thread (not just the last one)
+      const allTexts = [];
+      elements.forEach((el) => {
+        // Skip collapsed/hidden messages
+        if (el.offsetHeight > 0 && el.offsetWidth > 0) {
+          const text = el.innerText || el.textContent || '';
+          if (text.trim().length > 10) {
+            allTexts.push(text.trim());
+          }
+        }
+      });
+
+      // If we found visible bodies, also try the last one even if hidden
+      // (sometimes Gmail hides expanded content behind a "show trimmed" button)
+      if (allTexts.length === 0) {
+        const lastEl = elements[elements.length - 1];
+        const text = lastEl.innerText || lastEl.textContent || '';
+        if (text.trim().length > 10) {
+          allTexts.push(text.trim());
+        }
+      }
+
+      if (allTexts.length > 0) {
+        return cleanText(allTexts.join('\n\n---\n\n'));
+      }
+    }
   }
 
-  // Fallback: if not found by class, try grabbing all paragraphs in the main role
+  // Strategy 2: Look for the email subject + thread pane
+  const threadPane = document.querySelector('div[role="list"]');
+  if (threadPane) {
+    const text = threadPane.innerText || '';
+    if (text.trim().length > 30) {
+      return cleanText(text);
+    }
+  }
+
+  // Strategy 3: Look for the main content area
   const mainDiv = document.querySelector('div[role="main"]');
   if (mainDiv) {
-    return cleanText(mainDiv.innerText);
+    const text = mainDiv.innerText || '';
+    if (text.trim().length > 30) {
+      return cleanText(text);
+    }
   }
 
-  // Absolute fallback: just grab document body text (might contain noise)
-  return cleanText(document.body.innerText);
+  // Strategy 4: If we're not on Gmail, just grab all readable text from the page
+  // This makes the extension work on articles/blogs too
+  const article = document.querySelector('article');
+  if (article) {
+    return cleanText(article.innerText);
+  }
+
+  // Final fallback: grab body text, but filter out very short results
+  const bodyText = document.body.innerText || '';
+  return cleanText(bodyText);
 }
 
 function cleanText(text) {
-  // Remove excessive newlines and whitespace
   return text
     .replace(/\r\n/g, '\n')
     .replace(/\n{3,}/g, '\n\n')
+    .replace(/\t+/g, ' ')
+    .replace(/ {3,}/g, ' ')
     .trim();
 }

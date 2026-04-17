@@ -16,13 +16,40 @@ document.addEventListener('DOMContentLoaded', () => {
     navigator.clipboard.writeText(text).then(() => {
       const originalSVG = copyBtn.innerHTML;
       copyBtn.innerHTML =
-        '<span style="color:var(--success);font-size:12px;">Copied!</span>';
+        '<span style="color:#38a169;font-size:12px;">Copied!</span>';
       setTimeout(() => {
         copyBtn.innerHTML = originalSVG;
       }, 2000);
     });
   });
+
+  // Check if we're on Gmail and if API token is configured
+  checkReadiness();
 });
+
+function checkReadiness() {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    const desc = document.querySelector('.description');
+    if (tabs.length > 0) {
+      const url = tabs[0].url || '';
+      if (!url.startsWith('https://mail.google.com')) {
+        desc.textContent =
+          '⚠️ Please navigate to Gmail and open an email first, then click Summarize.';
+        desc.style.color = '#f6ad55';
+      }
+    }
+  });
+
+  // Also check if token is set
+  chrome.storage.local.get(['hfToken'], (result) => {
+    if (!result.hfToken) {
+      const desc = document.querySelector('.description');
+      desc.innerHTML =
+        '🔑 No API token found. Click the <strong>⚙️ gear icon</strong> above to add your Hugging Face token first.';
+      desc.style.color = '#fc8181';
+    }
+  });
+}
 
 function switchState(stateId) {
   document
@@ -42,13 +69,24 @@ function startSummarization() {
 
     const currentTab = tabs[0];
 
-    // First, tell background to handle everything (send message to background, which injects content script and calls API)
+    // Check if we're on a valid page
+    if (
+      !currentTab.url ||
+      currentTab.url.startsWith('chrome://') ||
+      currentTab.url.startsWith('chrome-extension://')
+    ) {
+      showError(
+        'Cannot summarize Chrome internal pages. Please navigate to Gmail or a web article.'
+      );
+      return;
+    }
+
     chrome.runtime.sendMessage(
       { action: 'SUMMARIZE_TAB', tabId: currentTab.id },
       (response) => {
         if (chrome.runtime.lastError) {
           showError(
-            'Could not connect to the extension background. Please refresh the page.'
+            'Extension background not responding. Try closing and re-opening the popup.'
           );
           return;
         }
@@ -72,7 +110,6 @@ function showError(message) {
 }
 
 function formatSummary(text) {
-  // Simple formatting: turn newlines into paragraphs
   return text
     .split('\n')
     .filter((p) => p.trim() !== '')
