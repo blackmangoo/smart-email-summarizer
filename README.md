@@ -106,4 +106,4 @@ A sleek, production-quality Chrome Extension that instantly summarizes long emai
 
 ## 📜 License
 
-MIT © Ammar
+ © Ammar
