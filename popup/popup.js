@@ -23,31 +23,41 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Check if we're on Gmail and if API token is configured
+  // Check readiness (token + Gmail) when popup opens
   checkReadiness();
 });
 
 function checkReadiness() {
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    const desc = document.querySelector('.description');
-    if (tabs.length > 0) {
-      const url = tabs[0].url || '';
-      if (!url.startsWith('https://mail.google.com')) {
-        desc.textContent =
-          '⚠️ Please navigate to Gmail and open an email first, then click Summarize.';
-        desc.style.color = '#f6ad55';
-      }
-    }
-  });
+  const desc = document.querySelector('.description');
+  const warnings = [];
 
-  // Also check if token is set
+  // Check token first
   chrome.storage.local.get(['hfToken'], (result) => {
     if (!result.hfToken) {
-      const desc = document.querySelector('.description');
-      desc.innerHTML =
-        '🔑 No API token found. Click the <strong>⚙️ gear icon</strong> above to add your Hugging Face token first.';
-      desc.style.color = '#fc8181';
+      warnings.push(
+        '🔑 No API token found. Click the ⚙️ gear icon above to add your Hugging Face token.'
+      );
     }
+
+    // Then check if we're on Gmail
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs.length > 0) {
+        const url = tabs[0].url || '';
+        if (!url.startsWith('https://mail.google.com')) {
+          warnings.push(
+            '📧 Navigate to Gmail and open an email before summarizing.'
+          );
+        }
+      }
+
+      // Display all warnings together
+      if (warnings.length > 0) {
+        desc.innerHTML = warnings.join('<br><br>');
+        desc.style.color = warnings.some((w) => w.startsWith('🔑'))
+          ? '#fc8181'
+          : '#f6ad55';
+      }
+    });
   });
 }
 
@@ -69,7 +79,7 @@ function startSummarization() {
 
     const currentTab = tabs[0];
 
-    // Check if we're on a valid page
+    // Block chrome:// internal pages
     if (
       !currentTab.url ||
       currentTab.url.startsWith('chrome://') ||
